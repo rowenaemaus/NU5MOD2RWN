@@ -1,21 +1,20 @@
 package Pckg;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
 
 public class UDPServer implements Runnable{
 
-	private ServerSocket ssock;
+	private DatagramSocket ssock;
 	private int port;
-	private static String serverName = "ServeRowena";
+	private static String serverName = "~~ ServeRowena ~~";
 	private String IPAddress;
 	private Scanner inputScanner;
 	private PrintStream outputStream;
@@ -26,16 +25,24 @@ public class UDPServer implements Runnable{
 		while (openNewSocket) {
 			try {
 				setupSsock();
-				Socket sock = ssock.accept();
-				printMessage("> Srv: client connected to server.");
+				printMessage("]] Server socket set up");
 
-				inputScanner = new Scanner(new BufferedInputStream(sock.getInputStream()));
-				outputStream = new PrintStream(new BufferedOutputStream(sock.getOutputStream()));
+				//				inputScanner = new Scanner(new BufferedInputStream(sock.getInputStream()));
+				//				outputStream = new PrintStream(new BufferedOutputStream(sock.getOutputStream()));
+				//				printMessage("> Server I/O set up.");
 
-				printMessage("> Server I/O set up.");
-				
 				while(true) {
-				doStuff();
+					// wait for client request
+					String filename = ("src/image1.png");
+					
+					// read in file
+					// read file in
+					Integer[] fileContents = readFile(filename);
+					printMessage("]] Server file read");
+					
+					// make into packets
+
+					// send using stop wait
 				}
 
 				//		try {
@@ -48,27 +55,38 @@ public class UDPServer implements Runnable{
 				//					connectionSocket.getOutputStream()));
 				//
 				//
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-
 	}
-
-	public void doStuff() {
+	
+	public Integer[] readFile(String filename) {
 		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e) {
+			File fileToSend = new File(filename);
+			FileInputStream fileStream = new FileInputStream(fileToSend);
+			Integer[] filecontent = new Integer[(int) fileToSend.length()];
+
+			for (int i = 0; i < filecontent.length; i++) {
+				int nextByte = fileStream.read();
+				if (nextByte == -1) {
+					throw new Exception("ERROR: File size is smaller than reported");
+				}
+				filecontent[i] = nextByte;
+			}
+			return filecontent;
+		} catch (Exception e) {
 			e.printStackTrace();
+			printMessage("ERROR: Server unable to setup filestream");
+			return null;
 		}
-		printMessage("Connection still up");
 	}
 
 	public void setupSsock() {
 		try {
 			IPAddress = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
-			printMessage("Unable to retrieve IP address of localhost!");
+			printMessage("ERROR: Unable to retrieve IP address of localhost!");
 			e.printStackTrace();
 		}
 
@@ -79,8 +97,9 @@ public class UDPServer implements Runnable{
 			int port = getPort();
 			try {
 				printMessage(String.format("Trying to open a socket at %s on port %d", IPAddress, port));
-				ssock = new ServerSocket(port, 0, InetAddress.getByName(IPAddress));
-				printMessage("Server started at port " + port);
+				//				ssock = new ServerSocket(port, 0, InetAddress.getByName(IPAddress));
+				ssock = new DatagramSocket(port, InetAddress.getByName(IPAddress));
+				printMessage("]] Server started at port " + port);
 				printMessage("----------------------------------------------");
 				printMessage("----------------------------------------------");
 			} catch (IOException e) {
@@ -90,7 +109,7 @@ public class UDPServer implements Runnable{
 		}
 
 	}
-	
+
 	public int getPort() {
 		//TODO implement
 		return 8070;
@@ -102,11 +121,11 @@ public class UDPServer implements Runnable{
 
 	public static void main (String[] args) {
 		UDPServer srv = new UDPServer();
-		System.out.println(String.format("Welcome to %s, ready to host...", serverName));
+		System.out.println(String.format("]] Welcome to %s, ready to host...", serverName));
 		try {
-			System.out.println("My IP address is " + InetAddress.getLocalHost().getHostAddress());
+			System.out.println("]] My IP address is " + InetAddress.getLocalHost().getHostAddress());
 		} catch (UnknownHostException e) {
-			System.out.println("Unable to retrieve IP");
+			System.out.println("ERROR: Unable to retrieve IP");
 			e.printStackTrace();
 		}
 		new Thread(srv).start();
