@@ -5,25 +5,30 @@ import java.io.FileInputStream;
 import java.io.PrintStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class UDPClient implements Runnable{
 
-	// server address
-	private String host;
-	// server port
-	private int port;
-	// server socket
+	private String serverIP;
+	private int serverPort;
+	private String clientIP;
+	private int clientPort;
 	private DatagramSocket socket;
 
-	// scanner over socket input stream
 	private Scanner in;
-
-	// socket output stream
 	private PrintStream out;
 
 	@Override
 	public void run() {
+		printMessage("|| Welcome client!\n|| -----------\n");
+		setClientIPPort();
+		printMessage(String.format("|| Your IP and port are: <%s,%d>", clientIP, clientPort));
+		
+		// broadcast for connection
+		
+		askDest();
+		
 		boolean connected = createConnection();
 		for (int i = 0; i < 3; i++) {
 			if (!connected) {
@@ -33,6 +38,8 @@ public class UDPClient implements Runnable{
 			}
 		}
 
+		
+		
 		// select file
 		String filename = selectFile();
 		printMessage("|| Client: selected file");
@@ -50,7 +57,7 @@ public class UDPClient implements Runnable{
 
 	public String selectFile() {
 		// TODO pick file
-		printMessage("> Client, what file do you want to send to server?");
+		printMessage("|| Client, what file do you want to send to server?\n>");
 		return ("src/image1.png");
 	}
 
@@ -75,34 +82,57 @@ public class UDPClient implements Runnable{
 		}
 	}
 
-	public void printMessage(String s) {
-		System.out.println(s);
-	}
-
-	public String shorter(String s) {
-		return (s.length() > 50) ? (s.substring(0,50)+"...") : s; 
-	}
-
-	public int askPort() {
+	public void setClientIPPort() {
+		try {
+			clientIP = InetAddress.getLocalHost().getHostAddress();
+		} catch (Exception e) {
+			e.printStackTrace();
+			printMessage(e.getMessage());
+		}
 		Scanner keyboard = new Scanner(System.in);
-		System.out.println("> Client, what port do you want to set a connection on?");
-		// TODO
-		return 8071;
+		System.out.println("|| Client, what port do you want to set your connection?\n>");
+		clientPort = keyboard.nextInt();
 	}
 
+	public void askDest() {
+		printMessage("|| Hello user. What IP is the server you want to connect to on?\n>\b");
+		Scanner keyboard = new Scanner(System.in);
+//		String ip = keyboard.nextLine();
+		String ip = null;
+		try {
+			ip = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		printMessage(String.format("|| You entered: %s", ip));
+		// TODO check valid ip
+		serverIP = ip;
+		printMessage("|| And on what port?\n>");
+//		int port = keyboard.nextInt();
+		int port = 8070;
+		printMessage(String.format("|| You entered: %d", port));
+		serverPort = port;
+		// TODO check valid port
+		printMessage(String.format("|| Trying to set up a connection with <%s,%d>", serverIP, serverPort));
+	}
+	
 	public boolean createConnection() {
 		clearConnection();
 
 		while (socket == null) {
 			try {
-				host = InetAddress.getLocalHost().getHostAddress();
-				port = askPort();
-				printMessage(String.format("|| Client attempting to connect to port %d on %s", port, host));
-				socket = new DatagramSocket(port);
+//				clientIP = InetAddress.getLocalHost().getHostAddress();
+//				clientPort = getIPPort();
+				
+				// TODO send broadcast
+				printMessage(String.format("|| Client on <%s,%d>", clientIP, clientPort));
+				printMessage(String.format("|| Server on <%s,%d>", serverIP, serverPort));
+				
+				socket = new DatagramSocket();
 				//				in = new Scanner(new BufferedInputStream(socket.getInputStream()));
 				//				out = new PrintStream(new BufferedOutputStream(socket.getOutputStream()));
 				printMessage("|| Client socket set up for client!");
-				return true;
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.out.println(e);
@@ -111,7 +141,7 @@ public class UDPClient implements Runnable{
 		}
 		return (socket != null);
 	}
-
+	
 	public void clearConnection() {
 		socket = null;
 		in = null;
@@ -129,6 +159,14 @@ public class UDPClient implements Runnable{
 		}
 	}
 
+	public void printMessage(String s) {
+		System.out.println(s);
+	}
+
+	public String shorter(String s) {
+		return (s.length() > 50) ? (s.substring(0,50)+"...") : s; 
+	}
+	
 	public static void main (String[] args) {
 		UDPClient c = new UDPClient();
 		new Thread(c).start();

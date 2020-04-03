@@ -28,22 +28,17 @@ public class QuoteClient {
             DatagramSocket socket = new DatagramSocket();
  
             while (true) {
-            	System.out.println("Flag1");
                 DatagramPacket request = new DatagramPacket(new byte[1], 1, address, port);
                 socket.send(request);
  
-                System.out.println("Flag2");
                 byte[] buffer = new byte[512];
-                System.out.println("Flag5");
+
                 DatagramPacket response = new DatagramPacket(buffer, buffer.length);
-                System.out.println("Flag6");
                 socket.receive(response);
-                System.out.println("Flag3");
+               
                 
                 String quote = new String(buffer, 0, response.getLength());
-                System.out.println("Flag4");
                 System.out.println(quote);
-                System.out.println();
  
                 Thread.sleep(10000);
             }
