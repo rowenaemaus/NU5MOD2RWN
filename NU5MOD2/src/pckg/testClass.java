@@ -1,4 +1,4 @@
-package Pckg;
+package pckg;
 
 public class testClass {
 //testje
