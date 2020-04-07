@@ -1,9 +1,14 @@
 package pckg;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+
 public class UDPClient implements Runnable{
-	
+
 	private UDProtocol udp;
-	
+
 	@Override
 	public void run() {
 		printMessage("|| Welcome client!\n|| -----------\n");
@@ -12,11 +17,20 @@ public class UDPClient implements Runnable{
 
 		createSocket();
 		udp.getOthersIP();
-		
+
 		printMessage("|| Ready to send packets!");
 
-		String message = "message";
-		udp.sendPacket(message.getBytes());
+		File file = new File("src/Quotes.txt");
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} 
+
+		udp.sendFile(file);
+
+//		String message = "message";
+//		udp.sendPacket(message.getBytes());
 
 		byte[] received = udp.receivePacket();
 
@@ -32,7 +46,7 @@ public class UDPClient implements Runnable{
 			}
 		}
 	}
-	
+
 	public void printMessage(String s) {
 		System.out.println(s);
 	}

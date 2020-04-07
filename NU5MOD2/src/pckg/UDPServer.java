@@ -8,12 +8,13 @@ import java.net.UnknownHostException;
 public class UDPServer implements Runnable{
 	private static String serverName = "Serverowena";
 	UDProtocol udp;
-	
+
 	boolean clientConnected = false;
 
 	int maxFiles = 10;
 	int numFiles;
 	File fileLocation = new File("src/");
+	int maxFileSize = 100000;
 
 	@Override
 	public void run() {
@@ -23,13 +24,15 @@ public class UDPServer implements Runnable{
 
 		udp.createSocket();
 		udp.getOthersIP();
-		
-		printMessage("|| Ready to send packets");
 
-		byte[] received = udp.receivePacket();
+		byte[] fileToReceive = new byte[maxFileSize];
+		printMessage("|| Ready to receive packets...");
 
-		String servermsg = "srv";
-		udp.sendPacket(servermsg.getBytes());
+		udp.receiveFile(); // wordt opgeslagen in /src
+//		udp.writeByte(fileToReceive);
+
+		//		String servermsg = "srv";
+		//		udp.sendPacket(servermsg.getBytes());
 
 	}
 
@@ -69,14 +72,18 @@ public class UDPServer implements Runnable{
 	}	
 
 	public static void main (String[] args) {
-		UDPServer srv = new UDPServer();
-		System.out.println(String.format(">> Welcome to %s, ready to host...", serverName));
-		try {
-			System.out.println(">> IP address is " + InetAddress.getLocalHost().getHostAddress());
-		} catch (UnknownHostException e) {
-			System.out.println("ERROR: Unable to retrieve IP");
-			e.printStackTrace();
-		}
-		new Thread(srv).start();
+//				UDPServer srv = new UDPServer();
+//				System.out.println(String.format(">> Welcome to %s, ready to host...", serverName));
+//				try {
+//					System.out.println(">> IP address is " + InetAddress.getLocalHost().getHostAddress());
+//				} catch (UnknownHostException e) {
+//					System.out.println("ERROR: Unable to retrieve IP");
+//					e.printStackTrace();
+//				}
+//				new Thread(srv).start();
+//				
+//				
+				UDPServer s = new UDPServer();
+				new Thread(s).start();
 	}
 }
