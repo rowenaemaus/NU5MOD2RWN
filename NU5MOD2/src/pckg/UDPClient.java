@@ -16,11 +16,13 @@ public class UDPClient implements Runnable{
 		udp = new UDProtocol("client", 8071);
 
 		createSocket();
-		udp.getOthersIP();
+//		udp.getOthersIP();
+		udp.multicastSend();
+		udp.printMessage(">>>>>>>>>>>>>>>>>");
 
-		printMessage("|| Ready to send packets!");
+		printMessage("|| Ready to go!!");
 
-		File file = new File("src/Quotes.txt");
+		File file = new File("/Users/rowena.emaus/nu-module-2/example_files/image1.png");
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
 		} catch (FileNotFoundException e) {
@@ -29,11 +31,7 @@ public class UDPClient implements Runnable{
 
 		udp.sendFile(file);
 
-//		String message = "message";
-//		udp.sendPacket(message.getBytes());
-
 		byte[] received = udp.receivePacket();
-
 	}
 
 	public void createSocket() {

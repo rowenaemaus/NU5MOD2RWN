@@ -234,6 +234,15 @@
 	
 	
 	
+		public void getOthersIP() {
+		//TODO implement broadcast etc
+		setOtherIP(ownIP);
+		if (name.equalsIgnoreCase("client")) {
+			setOtherPort(8070);
+		} else {
+			setOtherPort(8071);
+		}
+	}
 	
 	
 	

@@ -23,16 +23,14 @@ public class UDPServer implements Runnable{
 		udp = new UDProtocol("server", 8070);
 
 		udp.createSocket();
-		udp.getOthersIP();
+		udp.multicastReceive();
+		udp.printMessage(">>>>>>>>>>>>>>>>>");
 
 		byte[] fileToReceive = new byte[maxFileSize];
-		printMessage("|| Ready to receive packets...");
+		printMessage("|| Ready to go!");
 
 		udp.receiveFile(); // wordt opgeslagen in /src
 //		udp.writeByte(fileToReceive);
-
-		//		String servermsg = "srv";
-		//		udp.sendPacket(servermsg.getBytes());
 
 	}
 

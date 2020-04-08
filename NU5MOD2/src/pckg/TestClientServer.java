@@ -2,6 +2,7 @@ package pckg;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.TimeUnit;
 
 public class TestClientServer {
 
@@ -16,6 +17,13 @@ public class TestClientServer {
 			e.printStackTrace();
 		}
 		new Thread(srv).start();
+		
+		try {
+			System.out.println("Hold up a bit...");
+			TimeUnit.SECONDS.sleep(1);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 		UDPClient c = new UDPClient();
 		new Thread(c).start();
