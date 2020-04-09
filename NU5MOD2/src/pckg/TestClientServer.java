@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
+import pckg.UDProtocol.TimeOut;
+
 public class TestClientServer {
 
 	public static void main(String[] args) {

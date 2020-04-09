@@ -245,6 +245,11 @@
 	}
 	
 	
+		// TODO gebruik je deze uberhaupt?
+	public int countFiles() {
+		File folder = new File("bin/");
+		return folder.listFiles().length;
+	}
 	
 	
 	
