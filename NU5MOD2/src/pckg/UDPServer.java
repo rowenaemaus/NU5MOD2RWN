@@ -6,14 +6,13 @@ import java.net.UnknownHostException;
 
 
 public class UDPServer implements Runnable{
-	private static String serverName = "Serverowena";
 	UDProtocol udp;
 
 	boolean clientConnected = false;
 
 	int maxFiles = 10;
 	int numFiles;
-	File fileLocation = new File("bin/");
+	File fileLocation = new File("src/filesRowena");
 	int maxFileSize = 100000;
 
 	@Override
@@ -28,29 +27,28 @@ public class UDPServer implements Runnable{
 		printMessage("|| Server ready to go!");
 
 		udp.getContentRequest();
-
+		
+		
+//		udp.sendFile(new File("tiny.pdf"));
+		
+		
 		boolean stop = false;
 
 		while (!stop) {
 			udp.receivePacket();
 		}
 
+		
+		
+		
 		//wacht gewoon op inkomende pkts
 
 
 
 		// wacht op request for send
 
-		// zit deze in je map?
-
-		// sendFile met die titel
-
 		// als klaar print dat je FUCKING KLAAR BENT
 
-
-
-
-		// in receivefile geef je de naam
 
 		//		udp.receivePacket();
 		//		byte[] fileToReceive = new byte[maxFileSize];

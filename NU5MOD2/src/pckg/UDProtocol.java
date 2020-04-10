@@ -21,6 +21,7 @@ public class UDProtocol {
 	 * UDP protocol designed for Nedap University module 2 final assignment 2020
 	 */
 
+	String name;
 	DatagramSocket socket = null;
 	private InetAddress ownIP;
 	private int ownPort;
@@ -37,17 +38,20 @@ public class UDProtocol {
 
 	private static final int HEADERSIZE = HeaderIdx.values().length; 
 	private static final int DATASIZE = 256;
+	private static final int MAXPKTNUM = 127;
+	private static final int MAXFILESIZE = 10000000;
 
 	Set<Integer> pktsSent = new HashSet<>();
 	Set<Integer> pktsReceived = new HashSet<>();
 	Set<Integer> acksReceived = new HashSet<>();
 
-	String name;
-
 	File fileName;
 	File fileLocation;
 	File[] fileList;
+	Set<String> availableFiles = new HashSet<String>();
 	String fileListString;
+
+	Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 
 	public enum HeaderIdx {
 		TYPE (0),
@@ -67,6 +71,7 @@ public class UDProtocol {
 		INFO (3, "filecontents"),
 		GIMME (4, "pleaseTransfer"),
 		DECLINE (5, "decline"),
+		DELETE (6, "delete"),
 		UNKNOWN (-1, "unknown");
 
 		public final int value;
@@ -137,21 +142,21 @@ public class UDProtocol {
 	}
 
 	public void getContentRequest() {
-		printMessage(String.format("|| %s received request for content", name));
 		receivePacket();
+		printMessage(String.format("|| %s received request for content", name));
 	}
 
 	public void gimmeFile(String filename) {
 		byte[] pkt = new byte[HEADERSIZE + filename.getBytes().length];
 		pkt[HeaderIdx.TYPE.value] = (byte) PktType.GIMME.value;
-		pkt[HeaderIdx.PKTNUM.value] = (byte) 100;
+		pkt[HeaderIdx.PKTNUM.value] = (byte) filename.getBytes().length;
 		System.arraycopy(filename.getBytes(), 0, pkt, HEADERSIZE, filename.getBytes().length);
-		
+
 		printMessage(String.format("|| %s requesting file '%s'", name, filename));
 		sendPacket(pkt);
 
 		printMessage(String.format("|| %s waiting for <%s;%d> to send file %s", name, otherIP.getCanonicalHostName(), otherPort, filename));
-		
+
 		PktType type = getPktType(receivePacket());
 		if (type == PktType.ACK) {
 			printMessage("|| The file is coming your way...");
@@ -161,7 +166,7 @@ public class UDProtocol {
 		}
 		receiveFile(filename);
 	}
-	
+
 	public void sendFile(File file) {
 		printMessage("||----------------");
 		printMessage(String.format("|| %s starting to send file '%s'...", name, file.getName()));
@@ -172,6 +177,7 @@ public class UDProtocol {
 		} catch (Exception e) {
 			e.printStackTrace();
 			printMessage("ERROR: unable to read file to byte array");
+			return;
 		}
 
 		int filePointer = 0;
@@ -180,9 +186,8 @@ public class UDProtocol {
 
 		printMessage(String.format("|| %s starting packet transmission", name));
 		while (filePointer < fileContent.length) {
-			pktNum++;
-			// send x packets
-			System.out.println(String.format("||------------------ %s sending next pkt %d", name, pktNum));
+			pktNum++;	
+			printMessage(String.format("||------------------ %s sending next pkt %d", name, pktNum));
 			int datalen = Math.min(DATASIZE, fileContent.length - filePointer);
 			byte[] pkt = new byte[HEADERSIZE + datalen];	
 
@@ -192,12 +197,17 @@ public class UDProtocol {
 
 			System.arraycopy(fileContent, filePointer, pkt, HEADERSIZE, datalen);
 			printMessage(String.format("|| %s sending packet num: %d", name, pktNum));
-			// packet constructed, lets send it
 			sendPacket(pkt);
 			pktsSent.add(pktNum);
 			receiveAck(pktNum);
 
 			filePointer += datalen;
+
+			if (pktNum == MAXPKTNUM) {
+				pktNum = -1;
+				pktsSent.clear();
+
+			}
 
 			// check if all acks are in for these pkts
 			// if so continue
@@ -215,7 +225,7 @@ public class UDProtocol {
 		boolean endOfFile = false;
 		boolean allPktsIn = false;
 		pktsReceived.clear();
-		
+
 		while(!endOfFile && !allPktsIn) {
 			printMessage("|| Filecontent size is currently:" + fileContent.length);
 			printMessage(String.format("||---------------- %s receiving next pkt", name));
@@ -232,12 +242,15 @@ public class UDProtocol {
 				System.arraycopy(data, 0, fileContent, oldLen, dataLen);
 				pktsReceived.add(pktNum);
 			}
-
+			
 			if (endOfFile) {
 				printMessage("|| This was the last packet!");
 				printMessage("|| All packets in: " + allPktsIn(0, pktNum));
 				// TODO check if all are in from lastacked to final
 				// what to do when not all are in but you have the final one? wait a bit?
+			}
+			if (pktNum == MAXPKTNUM) {
+				pktsReceived.clear();
 			}
 			printMessage("||----------------");
 		}
@@ -300,7 +313,9 @@ public class UDProtocol {
 				break;
 			case GIMME:
 				handleGimme(data);
-				break;
+				return data;
+			case DECLINE:
+				return data;
 			default:
 				break;
 			}
@@ -328,8 +343,8 @@ public class UDProtocol {
 		data = Arrays.copyOfRange(data, 0, HEADERSIZE);
 		printPacketInfo(data);
 
-		String contents = getFileList();
-		System.out.println("SIZE OF CONTENTS IS " + contents.getBytes().length);
+		String contents = getContentlistString();
+		printMessage(String.format("|| %s has %d files", name, fileList.length));
 
 		byte[] pkt = new byte[HEADERSIZE+contents.getBytes().length];
 		pkt[HeaderIdx.TYPE.value] = (byte) PktType.INFO.value;
@@ -351,31 +366,50 @@ public class UDProtocol {
 
 	public void handleGimme(byte[] data) {
 		printPacketInfo(data);
-		
-		// get data excl header
-		// maak file van die name
-		// als die file in fiellist en in de map van filelocation
-		// ack pktnum 100
-		// begin sendFile van die file
+		//TODO dit doe je heel vaak, maak methode
+		int size = getPktNum(data);
+		byte[] fileRequest = new byte[size];
+		System.arraycopy(data, HEADERSIZE, fileRequest, 0, size);
+
+		String filename = new String(fileRequest);
+		if (availableFiles.contains(filename)) {
+			printMessage(String.format("|| %s has %s available. Sending ack for file transfer", name, filename));
+			sendAck(0);
+			sendFile(setFile(filename));
+
+		} else {
+			printMessage(String.format("|| %s declines. %s not available in file list", name, filename));
+			sendDecline();
+		}
 	}
-	
+
 	public void sendAck(int pktNum) {
 		byte[] pkt = new byte[HEADERSIZE];
 		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.ACK.value).byteValue();
 		pkt[HeaderIdx.PKTNUM.value] = ((Integer) pktNum).byteValue();
-		pkt[HeaderIdx.FINAL.value] = ((Integer) PktFinal.MID.value).byteValue();
 		printMessage(String.format("|| %s acking packet <%d>", name, pktNum));
 		sendPacket(pkt);
 	}
 
+	
 	public void receiveAck() {
 		byte[] receivedAck = receivePacket();
 		acksReceived.add((int) getPktNum(receivedAck)); 
 	}
 
+	
 	public boolean receiveAck(int pktNum) {
 		byte[] receivedAck = receivePacket();
 		return getPktNum(receivedAck) == pktNum && receivedAck[HeaderIdx.TYPE.value] == PktType.ACK.value;
+	}
+	
+	
+
+	public void sendDecline() {
+		byte[] pkt = new byte[HEADERSIZE];
+		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.DECLINE.value).byteValue();
+		printMessage(String.format("|| %s declining file request", name));
+		sendPacket(pkt);
 	}
 
 	public boolean allPktsIn(int start, int end) {
@@ -386,16 +420,25 @@ public class UDProtocol {
 		} return true;
 	}
 
-	public String getFileList() {
-		String contents = "";
-		fileList = fileLocation.listFiles();
 
+	public String getContentlistString() {
+		updateContentList();
+		String contents = "";
 		for (File f : fileList) {
-			if (f.getName().contains(".")) {
-				contents += f.getName() + '\n';
-			}
+			contents += f.getName() + '\n';
 		}
 		return contents;
+	}
+
+
+	public void updateContentList() {
+		fileList = fileLocation.listFiles();
+		for (File f : fileList) {
+			String extension = getExtension(f.getName());
+			if (allowedExtension.contains(extension)) {
+				availableFiles.add(f.getName());
+			}
+		}
 	}
 
 	/*
@@ -489,7 +532,7 @@ public class UDProtocol {
 	}
 
 	public File setFile(String filename) {
-		return new File(fileLocation+"/"+filename+"_received");
+		return new File(fileLocation.toString()+"/"+filename);
 	}
 
 	/*
@@ -561,18 +604,6 @@ public class UDProtocol {
 		return this.socket;
 	}
 
-	//	public int getPktType(pktType type) {
-	//		if (type == pktType.DATA) {
-	//			return 0;
-	//		} else if (type == pktType.ACK) {
-	//			return 1;
-	//		} else if (type == pktType.REQUEST) {
-	//			return 2;
-	//		} else {
-	//			return -1;
-	//		}	
-	//	}
-	//
 	public PktType getPktType(int i) {
 		if (i == PktType.DATA.value) {
 			return PktType.DATA;
@@ -597,22 +628,20 @@ public class UDProtocol {
 	public int getPktNum(byte[] data) {
 		return data[HeaderIdx.PKTNUM.value];
 	}
-	//	
-	//	public int getFinal(pktFinal finalPkt) {
-	//		if (finalPkt == pktFinal.FINAL) {
-	//			return 1;
-	//		} else {
-	//			return 0;
-	//		}
-	//	}
-	//	
-	//	public pktFinal getFinal(int i) {
-	//		if (i == 1) {
-	//			return pktFinal.FINAL;
-	//		} else {
-	//			return pktFinal.MID;
-	//		}
-	//	}
 
+	public void setExtensions(String[] s) {
+		for (String ext : s) {
+			setExtensions(ext);
+		}
+	}
+
+	public void setExtensions(String s) {
+		allowedExtension.add(s);
+	}
+
+	public String getExtension(String s) {
+		int i = s.indexOf(".");
+		return i == -1 ? "" : s.substring(i+1);
+	}
 }
 

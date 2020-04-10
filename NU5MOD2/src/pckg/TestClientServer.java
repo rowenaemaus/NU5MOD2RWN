@@ -30,5 +30,4 @@ public class TestClientServer {
 		UDPClient c = new UDPClient();
 		new Thread(c).start();
 	}
-	
 }
