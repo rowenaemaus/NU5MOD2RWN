@@ -3,33 +3,35 @@ package pckg;
 import java.io.File;
 import java.util.Scanner;
 
+import MenuClient.MenuOptionInterface;
+import udp.UDProtocol;
+
 public class UDPClient implements Runnable{
 
 	private UDProtocol udp;
 	//	String fileName;
 
+
 	public enum Menu {
-		CONTENT ("a", "Show content of server", new RequestOption()),
-		REQUEST ("b", "Request file from server", new RequestOption()),
-		SEND ("c", "Send a file to server", new SendOption()),
-		DELETE ("d", "Delete file from server", new DeleteOption()),
-		QUIT ("e", "Shutdown this client", new ShutdownOption());
+		CONTENT ("a", "Show content of server", new MenuClient.ContentOption()),
+		REQUEST ("b", "Request file from server", new MenuClient.RequestOption()),
+		SEND ("c", "Send a file to server", new MenuClient.SendOption()),
+		DELETE ("d", "Delete file from server", new MenuClient.DeleteOption()),
+		QUIT ("e", "Shutdown this client", new MenuClient.ShutdownOption());
 
 		public String option;
 		public String menuText;
 		public MenuOptionInterface handleOption;
-		
+
 		private Menu (String option, String menuText, MenuOptionInterface handleOption) {
 			this.option = option;
 			this.menuText = menuText;
 			this.handleOption = handleOption;
 		}		
-		
+
 		MenuOptionInterface getMenuOption() {
 			return handleOption;
 		}
-		
-		String s = "no enclosing instance of type of UDPClient is accessible. Must qualify the allocation with enclosing instance of type UDPClient";
 	}
 
 	@Override
@@ -38,45 +40,26 @@ public class UDPClient implements Runnable{
 		File fileLocation = new File(home+"/Downloads/udp"); 
 
 		printMessage("|| Welcome client!\n|| -----------\n");
-		// TODO optional choose port for self
-		udp = new UDProtocol("client", 8071, fileLocation);
+		this.udp = new UDProtocol("client", 8071, fileLocation);
 
 		createSocket();
-		udp.multicastSend();
-		udp.printMessage(">>>>>>>>>>>>>>>>>");
-
+		getUdp().multicastSend();
+		printMessage(">>>>>>>>>>>>>>>>>");
+		
 		printMessage("|| Client ready to go!!");
 
-		udp.sendContentRequest();
+		getUdp().sendContentRequest();
 
-		Menu m = printMenu();
-		m.handleOption.handleAction();
-		
-		//		String fileRequest = askFileToGet();
-		String fileRequest = "image6.png";
+		Menu m = null;
 
-		udp.gimmeFile(fileRequest);
-
-
-		System.out.println("<<<<<<<<<<<<<<<<<<<");
-		System.out.println("U MADE IT THRU BITCH");
-
-
-
-		//		File file = new File("/Users/rowena.emaus/nu-module-2/example_files/image1.png");
-		//		try {
-		//			BufferedReader br = new BufferedReader(new FileReader(file));
-		//		} catch (FileNotFoundException e) {
-		//			e.printStackTrace();
-		//		} 
-
-		//		udp.sendFile(file);
-
-		//		byte[] received = udp.receivePacket();
-
-
+		while (m != Menu.QUIT) {
+			m = printMenu();
+			m.handleOption.handleAction(this);
+		}
+		printMessage("<<<<<<<<<<<<<<<<<");
+		printMessage(">> Thanks, bye!");
 	}
-	
+
 	public Menu printMenu() {
 		printMessage("---------------------------");
 		printMessage(" MENU:");
@@ -98,22 +81,6 @@ public class UDPClient implements Runnable{
 		return validAnswer;
 	}
 
-	public String askFileToGet() {
-		printMessage(">> What file would you like to request?\n...");
-		String answer = getAnswer();
-
-		while (!answer.equalsIgnoreCase("exit")) {
-			if (!udp.fileListString.contains(answer) && !answer.contains(".")) {
-				printMessage(">> WARNING: invalid file request, please try again (or EXIT to cancel)\n...");
-				answer = getAnswer();
-			} else {
-				printMessage(String.format(">> Requesting file '%s' from server...", answer));
-				break;
-			}
-		}
-		return answer;
-	}
-
 	public Menu checkValidOption(String s) {
 		for (Menu m : Menu.values()) {
 			if (m.option.equalsIgnoreCase(s)) {
@@ -125,63 +92,16 @@ public class UDPClient implements Runnable{
 
 	public String getAnswer() {
 		Scanner keyboard = new Scanner(System.in);
+		String answer = keyboard.nextLine();
 		keyboard.close();
-		return keyboard.nextLine();
+		return answer; 
 	}
 
-	
-	static class ContentOption implements MenuOptionInterface{
-		@Override
-		public void handleAction() {
-			printMessage("-- Asking server contents --");
-			udp.sendContentRequest();
-		}
-	}
-	
-	public class RequestOption implements MenuOptionInterface{
-		@Override
-		public void handleAction() {
-			printMessage("-- Requesting file from server --");
-			String fileRequest = "image6.png";
-			udp.gimmeFile(fileRequest);
-		}
-	}
-	
-	public class SendOption implements MenuOptionInterface{
-		@Override
-		public void handleAction() {
-			printMessage("-- Sending file to server --");
-			// ask what file
-			// udp.sendFile(File filename);
-			// TODO Auto-generated method stub
-		}
-	}
-	
-	public class DeleteOption implements MenuOptionInterface{
-		@Override
-		public void handleAction() {
-			printMessage("-- Deleting file from server --");
-			// TODO Auto-generated method stub
-		}
-	}
-	
-	public class ShutdownOption implements MenuOptionInterface{
-		@Override
-		public void handleAction() {
-			printMessage("-- Shutting down client --");
-			// TODO Auto-generated method stub
-		}
-	}
-	
-	public interface MenuOptionInterface {
-		void handleAction();
-	}
-	
 	public void createSocket() {
-		boolean connected = udp.createSocket();
+		boolean connected = getUdp().createSocket();
 		for (int i = 0; i < 3; i++) {
 			if (!connected) {
-				connected = udp.createSocket();
+				connected = getUdp().createSocket();
 			} else {
 				break;
 			}
@@ -199,6 +119,10 @@ public class UDPClient implements Runnable{
 	public static void main (String[] args) {
 		UDPClient c = new UDPClient();
 		new Thread(c).start();
+	}
+
+	public UDProtocol getUdp() {
+		return udp;
 	}
 }
 

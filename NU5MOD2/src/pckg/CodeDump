@@ -257,8 +257,48 @@
 	
 	
 	
+		//		File file = new File("/Users/rowena.emaus/nu-module-2/example_files/image1.png");
+		//		try {
+		//			BufferedReader br = new BufferedReader(new FileReader(file));
+		//		} catch (FileNotFoundException e) {
+		//			e.printStackTrace();
+		//		} 
+
+		//		udp.sendFile(file);
+
+		//		byte[] received = udp.receivePacket();
+
 	
 	
+	
+	
+	//
+//	public void printFiles() {
+//		printMessage("]] Memory contains:");
+//		File[] files = fileLocation.listFiles();
+//
+//		int i = 0;
+//		for (File file : files){
+//			if (file.isFile()) {
+//				file.getName();
+//				i++;
+//				printMessage(String.format("]] %(-10d: %s", i, file.getName()));
+//			}
+//		}
+//		printMessage("]] ------");
+//		if (files.length < maxFiles) {
+//			printMessage(String.format("]] %-10s: Add new file", "O"));
+//		} else {
+//			printMessage("]] -- Adding files not possible, max storage used --");
+//		}
+//		printMessage(String.format("]] %-10s: Remove file", "X"));
+//		printMessage("\n");
+//	}
+
+	public int countFiles() {
+		File folder = new File("src/");
+		return folder.listFiles().length;
+	}
 	
 	
 	

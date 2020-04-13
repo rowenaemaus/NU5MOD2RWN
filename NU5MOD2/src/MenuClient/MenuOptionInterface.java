@@ -1,0 +1,7 @@
+package MenuClient;
+
+import pckg.UDPClient;
+
+public interface MenuOptionInterface {
+	void handleAction(UDPClient c);
+}

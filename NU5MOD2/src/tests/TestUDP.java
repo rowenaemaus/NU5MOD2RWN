@@ -11,7 +11,7 @@ import java.net.UnknownHostException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import pckg.UDProtocol;
+import udp.UDProtocol;
 
 
 public class TestUDP {
@@ -22,7 +22,7 @@ public class TestUDP {
 	
 	@BeforeAll
 	public static void setUp() {
-		udp = new UDProtocol(name, port);
+		udp = new UDProtocol(name, port, null);
 	}
 	
 	@Test
