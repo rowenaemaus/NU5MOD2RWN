@@ -50,6 +50,7 @@ public class UDProtocol {
 	private File[] fileList;
 	private Set<String> availableFiles = new HashSet<String>();
 	private String fileListString;
+	private Statistics stats;
 
 	private Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 

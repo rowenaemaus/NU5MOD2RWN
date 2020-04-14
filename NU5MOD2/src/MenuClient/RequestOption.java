@@ -18,9 +18,6 @@ public class RequestOption implements MenuOptionInterface{
 	public String askFileToGet() {
 		c.printMessage(">> What file would you like to request?\n...");
 		String answer = c.getAnswer();
-		System.out.println("----------");
-		System.out.println("answer" + answer);
-		System.out.println("----------");
 		
 		while (!answer.equalsIgnoreCase("exit")) {
 			if (!c.getUdp().getFileListString().contains(answer) && !answer.contains(".")) {
