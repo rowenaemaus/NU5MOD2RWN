@@ -12,17 +12,21 @@ public class UDPServer implements Runnable{
 
 	int maxFiles = 10;
 	int numFiles;
-	File fileLocation = new File("src/filesRowena");
+	static String fileLocString = "/home/pi/udp2"; 
+	// = System.getProperty("user.home")+"/Downloads/udp2";	
+	File fileLocation;
 	int maxFileSize = 100000;
 
 	@Override
 	public void run() {
+		File fileLocation = new File(fileLocString); 
+
 		printMessage("|| Welcome server!\n|| -----------\n");
 		
 		udp = new UDProtocol("server", 8070, fileLocation);
 
+		udp.createSocket();
 		udp.multicastReceive();
-//		udp.createSocket();
 		udp.printMessage(">>>>>>>>>>>>>>>>>");
 		printMessage("|| Server ready to go!");
 
@@ -34,16 +38,16 @@ public class UDPServer implements Runnable{
 		}
 	}
 
-	public void checkMemory(byte[] data) {
-		// TODO check if max files is reached. Otherwise refuse to save.	
-	}
-
 	public void printMessage(String s) {
 		System.out.println(s);
 	}	
 
 	public static void main (String[] args) {
 		UDPServer s = new UDPServer();
+		if (args.length > 0) {
+			fileLocString = args[0];
+		}
+		
 		new Thread(s).start();
 	}
 }
