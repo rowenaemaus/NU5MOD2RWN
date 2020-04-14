@@ -12,16 +12,18 @@ public class UDPServer implements Runnable{
 
 	int maxFiles = 10;
 	int numFiles;
-	static String fileLocString = "/home/pi/udp2"; 
-	// = System.getProperty("user.home")+"/Downloads/udp2";	
-	File fileLocation;
+	 
+	private static String fileLocString = "/home/pi/udp2";
+	
+//	private static String fileLocString = System.getProperty("user.home")+"/Downloads/udp2";	
+
 	int maxFileSize = 100000;
 
 	@Override
 	public void run() {
 		File fileLocation = new File(fileLocString); 
 
-		printMessage("|| Welcome server!\n|| -----------\n");
+		printMessage("|| Welcome server!\n|| -----------");
 		
 		udp = new UDProtocol("server", 8070, fileLocation);
 

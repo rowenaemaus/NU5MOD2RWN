@@ -8,8 +8,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +41,6 @@ public class UDProtocol {
 	public static final int HEADERSIZE = HeaderIdx.values().length; 
 	public static final int DATASIZE = 256;
 	public static final int MAXPKTNUM = 127;
-	public static final int MAXFILESIZE = 10000000;
 
 	Set<Integer> pktsSent = new HashSet<>();
 	Set<Integer> pktsReceived = new HashSet<>();
@@ -119,10 +120,11 @@ public class UDProtocol {
 
 	public UDProtocol(String name, int port, File fileLocation) {
 		try {
-			this.ownIP = InetAddress.getLocalHost();
+			this.name = name;
+			this.ownIP = getNetworkIP();
 			this.ownPort = port;
 			this.fileLocation = fileLocation;
-			this.name = name;
+			
 			this.multicastAddr = InetAddress.getByName(MULTICAST);
 			this.multicastSize = mcMsg1.getBytes().length;
 			printMessage(String.format("|| Your IP and port are: <%s,%d>", ownIP.getHostAddress(), ownPort));
@@ -356,7 +358,6 @@ public class UDProtocol {
 		}
 	}
 
-
 	public byte[] receivePacket() {
 		try {
 			byte[] buffer = new byte[HEADERSIZE + DATASIZE];
@@ -376,7 +377,6 @@ public class UDProtocol {
 			return null;
 		}
 	}
-
 
 	public void sendAck(int pktNum) {
 		byte[] pkt = new byte[HEADERSIZE];
@@ -411,7 +411,6 @@ public class UDProtocol {
 		} return true;
 	}
 
-
 	public String getContentlistString() {
 		updateContentList();
 		String contents = "";
@@ -423,11 +422,6 @@ public class UDProtocol {
 
 	public void updateContentList() {
 		fileList = getFileLocation().listFiles();
-		System.out.println("-----------");
-		System.out.println("filelocation: " + getFileLocation());
-		System.out.println(fileList.toString());
-		System.out.println("-----------");
-		
 		for (File f : getFileList()) {
 			String extension = getExtension(f.getName());
 			if (allowedExtension.contains(extension)) {
@@ -441,6 +435,35 @@ public class UDProtocol {
 	 * *********** Connection methods *************
 	 * ******************************************** 
 	 */
+	public InetAddress getNetworkIP() {
+		String compare = "192.168.";
+		InetAddress localIP = null;
+		
+		Enumeration<NetworkInterface> nets = null;
+		printMessage(String.format("|| %s trying to extracting network interfaces", name));
+		try {
+			nets = NetworkInterface.getNetworkInterfaces();		
+			printMessage(String.format("|| %s done extracting network interfaces", name));
+		} catch (Exception e) {
+			e.printStackTrace();
+			printMessage(String.format("|| ERROR: %s unable to fetch network interfaces", name));		
+		}
+			
+		printMessage(String.format("|| %s trying to find local ip of own machine", name));
+		while (nets.hasMoreElements()) {
+			NetworkInterface nif = nets.nextElement();
+			Enumeration<InetAddress> a = nif.getInetAddresses();
+			while (a.hasMoreElements()) {
+				InetAddress addr = a.nextElement();
+				if (addr.getHostAddress().substring(0, compare.length()).equalsIgnoreCase(compare)) {
+					localIP = addr;
+					printMessage(String.format("|| %s setting own IP to: <%s>", name, localIP.getHostAddress()));
+				}
+			}	
+		}
+		return localIP;
+	}
+	
 	public boolean createSocket() {
 		int maxAttempts = 2;
 		int attempts = 1;
