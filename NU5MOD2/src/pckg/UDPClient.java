@@ -46,7 +46,7 @@ public class UDPClient implements Runnable{
 		createSocket();
 		getUdp().multicastSend();
 		printMessage(">>>>>>>>>>>>>>>>>");
-		
+
 		printMessage("|| Client ready to go!!");
 
 		getUdp().sendContentRequest();
