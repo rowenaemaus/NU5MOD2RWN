@@ -50,7 +50,6 @@ public class UDProtocol {
 	private File[] fileList;
 	private Set<String> availableFiles = new HashSet<String>();
 	private String fileListString;
-	private Statistics stats;
 
 	private Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 
@@ -238,11 +237,13 @@ public class UDProtocol {
 	}
 
 	public void sendFile(File file) {
+		Statistics stats = new Statistics(file.getName());
 		printMessage("||----------------");
 		printMessage(String.format("|| %s starting to send file '%s'...", name, file.getName()));
 		byte[] fileContent = null;
 		try {
 			fileContent = Files.readAllBytes(file.toPath());
+			stats.setTotalFileSize(fileContent.length);
 			printMessage(String.format("|| %s read file to byte array, total size: %d", name, fileContent.length));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -255,6 +256,7 @@ public class UDProtocol {
 		acksReceived.clear();
 
 		printMessage(String.format("|| %s starting packet transmission", name));
+		stats.setStartTransmission(System.currentTimeMillis());
 		while (filePointer < fileContent.length) {
 			pktNum++;	
 			printMessage(String.format("||------------------ %s sending next pkt %d", name, pktNum));
@@ -268,15 +270,16 @@ public class UDProtocol {
 			System.arraycopy(fileContent, filePointer, pkt, HEADERSIZE, datalen);
 			printMessage(String.format("|| %s sending packet num: %d", name, pktNum));
 			sendPacket(pkt);
+			stats.addSent();
 			pktsSent.add(pktNum);
 			receiveAck(pktNum);
+			stats.addReceived();
 
 			filePointer += datalen;
 
 			if (pktNum == MAXPKTNUM) {
 				pktNum = -1;
 				pktsSent.clear();
-
 			}
 
 			// check if all acks are in for these pkts
@@ -284,9 +287,11 @@ public class UDProtocol {
 			// else wait ff 2 x ofzo 
 			// als dan nog niet gooi transmissie Exception en stop overdracht
 		}
+		stats.setEndTransmission(System.currentTimeMillis());
 	}
 
 	public byte[] receiveFile(String filename) {
+		Statistics stats = new Statistics(filename);
 		printMessage("||----------------");
 		printMessage(String.format("|| %s waiting to receive file...", name));
 		byte[] fileContent = new byte[0];
@@ -295,10 +300,12 @@ public class UDProtocol {
 		boolean allPktsIn = false;
 		pktsReceived.clear();
 
+		stats.setStartTransmission(System.currentTimeMillis());
 		while(!endOfFile && !allPktsIn) {
 			printMessage("|| Filecontent size is currently:" + fileContent.length);
 			printMessage(String.format("||---------------- %s receiving next pkt", name));
 			byte[] pktData = receivePacket();
+			stats.addReceived();
 
 			int pktNum = (int) getPktNum(pktData);
 			endOfFile = (int) pktData[HeaderIdx.FINAL.value] == PktFinal.MID.value ? false : true;
@@ -310,9 +317,12 @@ public class UDProtocol {
 				fileContent = Arrays.copyOf(fileContent,oldLen+dataLen);
 				System.arraycopy(data, 0, fileContent, oldLen, dataLen);
 				pktsReceived.add(pktNum);
+			} else {
+				stats.addRetransmit();
 			}
 
 			if (endOfFile) {
+				stats.setEndTransmission(System.currentTimeMillis());
 				printMessage("|| This was the last packet!");
 				printMessage("|| All packets in: " + allPktsIn(0, pktNum));
 				// TODO check if all are in from lastacked to final
@@ -324,6 +334,8 @@ public class UDProtocol {
 			printMessage("||----------------");
 		}
 		printMessage("|| Final received file size is:" + fileContent.length);
+		stats.setTotalFileSize(fileContent.length);
+		stats.printStats();
 		writeByte(fileContent, filename);
 		return fileContent;
 	}
@@ -691,4 +703,5 @@ public class UDProtocol {
 		this.fileListString = string;  
 
 	}
+	
 }
