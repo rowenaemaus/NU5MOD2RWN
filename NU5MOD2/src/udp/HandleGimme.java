@@ -5,7 +5,6 @@ public class HandleGimme implements PacketHandler{
 	@Override
 	public void handlePkt(UDProtocol p, byte[] data) {
 		p.printPacketInfo(data);
-		//TODO dit doe je heel vaak, maak methode
 		int size = p.getPktNum(data);
 		byte[] fileRequest = new byte[size];
 		System.arraycopy(data, UDProtocol.HEADERSIZE, fileRequest, 0, size);
@@ -19,5 +18,9 @@ public class HandleGimme implements PacketHandler{
 			p.printMessage(String.format("|| %s declines. %s not available in file list", p.name, filename));
 			p.sendDecline();
 		}	
+		
+		p.printMessage("|| Curent file list:");
+		p.printMessage(p.getContentlistString());
+		p.printMessage("|| -----------------");
 	}
 }

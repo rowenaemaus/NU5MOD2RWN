@@ -9,10 +9,9 @@ import udp.UDProtocol;
 public class UDPClient implements Runnable{
 
 	private UDProtocol udp;
-	Scanner keyboard = new Scanner(System.in);
-	//	String fileName;
-
-
+	private Scanner keyboard = new Scanner(System.in);
+	private static String fileLocString = System.getProperty("user.home")+"/Downloads/udp";
+	
 	public enum Menu {
 		CONTENT ("a", "Show content of server", new MenuClient.ContentOption()),
 		REQUEST ("b", "Request file from server", new MenuClient.RequestOption()),
@@ -37,11 +36,10 @@ public class UDPClient implements Runnable{
 
 	@Override
 	public void run() {
-		String home = System.getProperty("user.home");
-		File fileLocation = new File(home+"/Downloads/udp"); 
+		File fileLocation = new File(fileLocString);
 
 		printMessage("|| Welcome client!\n|| -----------\n");
-		this.udp = new UDProtocol("client", 8071, fileLocation);
+		this.udp = new UDProtocol("client" , 8071, fileLocation);
 
 		createSocket();
 		getUdp().multicastSend();
@@ -117,6 +115,10 @@ public class UDPClient implements Runnable{
 
 	public static void main (String[] args) {
 		UDPClient c = new UDPClient();
+		if (args.length > 0) {
+			fileLocString = args[0];
+		}
+
 		new Thread(c).start();
 	}
 
