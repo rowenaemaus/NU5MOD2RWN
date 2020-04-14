@@ -134,7 +134,7 @@ public class UDProtocol {
 	}
 
 	public class TimeOut implements Runnable{
-		public static final int TIMELIMIT = 10;
+		public static final int TIMELIMIT = 3;
 		private DatagramPacket pkt;
 		private int pktNum;
 
@@ -146,7 +146,7 @@ public class UDProtocol {
 		@Override
 		public void run() {
 			try {
-				Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+				Thread.sleep(TimeUnit.SECONDS.toMillis(TIMELIMIT));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 				printMessage(String.format("|| ERROR: unable to wait for timeout pkt " + pktNum));

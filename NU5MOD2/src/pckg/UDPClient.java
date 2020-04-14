@@ -9,6 +9,7 @@ import udp.UDProtocol;
 public class UDPClient implements Runnable{
 
 	private UDProtocol udp;
+	Scanner keyboard = new Scanner(System.in);
 	//	String fileName;
 
 
@@ -45,7 +46,7 @@ public class UDPClient implements Runnable{
 		createSocket();
 		getUdp().multicastSend();
 		printMessage(">>>>>>>>>>>>>>>>>");
-		
+
 		printMessage("|| Client ready to go!!");
 
 		getUdp().sendContentRequest();
@@ -91,10 +92,7 @@ public class UDPClient implements Runnable{
 	}
 
 	public String getAnswer() {
-		Scanner keyboard = new Scanner(System.in);
-		String answer = keyboard.nextLine();
-		keyboard.close();
-		return answer; 
+		return keyboard.nextLine(); 
 	}
 
 	public void createSocket() {
