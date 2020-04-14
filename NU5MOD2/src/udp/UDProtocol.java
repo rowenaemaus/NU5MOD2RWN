@@ -134,7 +134,7 @@ public class UDProtocol {
 	}
 
 	public class TimeOut implements Runnable{
-		public static final int TIMELIMIT = 10;
+		public static final int TIMELIMIT = 3;
 		private DatagramPacket pkt;
 		private int pktNum;
 
@@ -146,7 +146,7 @@ public class UDProtocol {
 		@Override
 		public void run() {
 			try {
-				Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+				Thread.sleep(TimeUnit.SECONDS.toMillis(TIMELIMIT));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 				printMessage(String.format("|| ERROR: unable to wait for timeout pkt " + pktNum));
@@ -351,6 +351,7 @@ public class UDProtocol {
 			printMessage(String.format("|| SUCCESS: %s sent packet type: %s", name, dataType.label));
 		} catch (Exception e) {
 			e.printStackTrace();
+			printMessage(e.getMessage());
 			printMessage("ERROR: sending packet not succesfull");
 		}
 	}
@@ -422,6 +423,11 @@ public class UDProtocol {
 
 	public void updateContentList() {
 		fileList = getFileLocation().listFiles();
+		System.out.println("-----------");
+		System.out.println("filelocation: " + getFileLocation());
+		System.out.println(fileList.toString());
+		System.out.println("-----------");
+		
 		for (File f : getFileList()) {
 			String extension = getExtension(f.getName());
 			if (allowedExtension.contains(extension)) {
@@ -451,7 +457,6 @@ public class UDProtocol {
 		}
 		return (socket != null);
 	}
-
 
 	public void multicastSend() {
 		try {
@@ -501,9 +506,6 @@ public class UDProtocol {
 				if (received.contains(mcMsg1)) {
 					printMessage("|| Saving info from multicast sender");
 					setIPFromPkt(pkt);
-					printMessage(String.format("|| %s setting up datagramsocket...", name));
-					createSocket();
-					printMessage(String.format("|| %s socket set up. Sending confirmation to client...", name));
 					sendPacket(mcMsg2.getBytes());
 					break;
 				}
@@ -515,7 +517,6 @@ public class UDProtocol {
 			e.printStackTrace();
 		}
 	}
-
 
 	public void clearConnection() {
 		closeConnection();
