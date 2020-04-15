@@ -288,6 +288,7 @@ public class UDProtocol {
 			// als dan nog niet gooi transmissie Exception en stop overdracht
 		}
 		stats.setEndTransmission(System.currentTimeMillis());
+		stats.printStats();
 	}
 
 	public byte[] receiveFile(String filename) {

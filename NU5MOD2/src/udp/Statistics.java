@@ -24,21 +24,19 @@ public class Statistics {
 	}
 
 	public void printStats() {
-		printMessage(String.format("***\n Statistics on the transmission of %s:", filename));
-		printMessage(String.format(" > Total packets received:\n>> %d packets", pktsReceived));
-		printMessage(String.format(" > Total packets sent:\n>> %d packets", pktsSent));
-		printMessage(String.format(" > Number of lost packets:\n>> %d packets", lostPackets));
- 		printMessage(String.format(" > Number of retransmissions:\n>> %d", retransmit));
-
-		printMessage(String.format(" > Total transmission time:\n>> %d ms", getTotalTime()));
-		printMessage(String.format(" > Total file size:\n>> %d", totalFileSize));
-		printMessage(String.format(" > Average transfer speed:\n>> %d bytes per second", getSpeed()));
-		printMessage("|| ***");
+		printMessage(String.format("***** Statistics on the transmission of %s:", filename));
+		printMessage(String.format("%-32s%10d %16s", "Total packets received:",pktsReceived, "packets"));
+		printMessage(String.format("%-32s%10d %16s", "Total packets sent:",pktsSent, "packets"));
+		printMessage(String.format("%-32s%10d %16s", "Total lost packets:",lostPackets, "packets"));
+		printMessage(String.format("%-32s%10d %16s", "Total retransmissions:",retransmit, "packets"));
+		printMessage(String.format("%-32s%10d %16s", "Total transmission time:",getTotalTime(), "ms"));
+		printMessage(String.format("%-32s%10d %16s", "Total file size:",totalFileSize, "bytes"));
+		printMessage(String.format("%-32s%10.3f %16s", "Average transfer speed:",getSpeed(), "bytes per ms"));
+		printMessage("*****");
 	}
 
-	public int getSpeed() {
-		int timeInSec = getTotalTime()/1000;		
-		return totalFileSize/timeInSec;
+	public double getSpeed() {		
+		return totalFileSize/getTotalTime();
 	}
 	
 	
