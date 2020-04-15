@@ -10,11 +10,14 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.CRC32;
 
 public class UDProtocol {
 
@@ -124,7 +127,7 @@ public class UDProtocol {
 			this.ownIP = getNetworkIP();
 			this.ownPort = port;
 			this.fileLocation = fileLocation;
-			
+
 			this.multicastAddr = InetAddress.getByName(MULTICAST);
 			this.multicastSize = mcMsg1.getBytes().length;
 			printMessage(String.format("|| Your IP and port are: <%s,%d>", ownIP.getHostAddress(), ownPort));
@@ -289,6 +292,8 @@ public class UDProtocol {
 		}
 		stats.setEndTransmission(System.currentTimeMillis());
 		stats.printStats();
+
+		sendHashFile(fileContent);		
 	}
 
 	public byte[] receiveFile(String filename) {
@@ -337,7 +342,18 @@ public class UDProtocol {
 		printMessage("|| Final received file size is:" + fileContent.length);
 		stats.setTotalFileSize(fileContent.length);
 		stats.printStats();
-		writeByte(fileContent, filename);
+
+		String hashReceived = new String(receiveHash());
+		String hashComputed = new String(getHash(fileContent));
+		printMessage(String.format("|| %s received hash of original file '%s': %s", name, filename, hashReceived));
+		printMessage(String.format("|| %s computed hash of received file '%s': %s", name, filename, hashComputed));
+
+		if (hashReceived.contentEquals(hashComputed)) {
+			printMessage(String.format("|| SUCCESS: Integrity of file '%s' checks. %s writing file to system...", filename, name));
+			writeByte(fileContent, filename);
+		} else {
+			printMessage(String.format("|| WARNING: Integrity of file '%s' does not check. %s not writing file to system.", filename, name));
+		}
 		return fileContent;
 	}
 
@@ -384,7 +400,6 @@ public class UDProtocol {
 
 			pktType.getHandler().handlePkt(this, data);
 			return data;
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			printMessage("ERROR: unable to receive packet");
@@ -415,6 +430,36 @@ public class UDProtocol {
 		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.DECLINE.value).byteValue();
 		printMessage(String.format("|| %s declining request", name));
 		sendPacket(pkt);
+	}
+
+	public void sendHashFile(byte[] data) {
+		byte[] hash = getHash(data);
+		byte[] pkt = new byte[HEADERSIZE + hash.length];
+
+		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.ACK.value).byteValue();
+		pkt[HeaderIdx.PKTNUM.value] = (byte) hash.length;
+		System.arraycopy(hash, 0, pkt, HEADERSIZE, hash.length);
+
+		sendPacket(pkt);
+	}
+
+	public byte[] receiveHash() {
+		byte[] pkt = receivePacket();
+		int size = getPktNum(pkt);
+		byte[] hash = new byte[size];
+		System.arraycopy(pkt, HEADERSIZE, hash, 0, size);
+		return hash;
+	}
+
+	public byte[] getHash(byte[] data) {
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+			md.update(data);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return md.digest();
 	}
 
 	public boolean allPktsIn(int start, int end) {
@@ -452,7 +497,7 @@ public class UDProtocol {
 	public InetAddress getNetworkIP() {
 		String compare = "192.168.";
 		InetAddress localIP = null;
-		
+
 		Enumeration<NetworkInterface> nets = null;
 		printMessage(String.format("|| %s trying to extracting network interfaces", name));
 		try {
@@ -462,7 +507,7 @@ public class UDProtocol {
 			e.printStackTrace();
 			printMessage(String.format("|| ERROR: %s unable to fetch network interfaces", name));		
 		}
-			
+
 		printMessage(String.format("|| %s trying to find local ip of own machine", name));
 		while (nets.hasMoreElements()) {
 			NetworkInterface nif = nets.nextElement();
@@ -477,7 +522,7 @@ public class UDProtocol {
 		}
 		return localIP;
 	}
-	
+
 	public boolean createSocket() {
 		int maxAttempts = 2;
 		int attempts = 1;
@@ -704,5 +749,12 @@ public class UDProtocol {
 		this.fileListString = string;  
 
 	}
-	
+
+	public long getCRC(byte[] data) {
+		CRC32 crc = new CRC32();
+		crc.update(data, 0, data.length);
+		printMessage(String.format("|| %s computing crc for data", name));
+		return crc.getValue();
+	}
+
 }
