@@ -1,18 +1,20 @@
 package MenuClient;
 
 import pckg.UDPClient;
+import udp.UDProtocol;
 
 public class RequestOption implements MenuOptionInterface{
 	
 	private UDPClient c;
+	private UDProtocol p;
 	
 	@Override
 	public void handleAction(UDPClient c) {
 		this.c = c;
+		this.p = c.getUdp();
 		c.printMessage("-- Requesting file from server --");
-		//		String fileRequest = "image4.png"; // for testing
 		String fileRequest = askFileToGet();
-		c.getUdp().gimmeFile(fileRequest);
+		p.gimmeFile(fileRequest);
 	}
 	
 	public String askFileToGet() {
@@ -20,7 +22,7 @@ public class RequestOption implements MenuOptionInterface{
 		String answer = c.getAnswer();
 		
 		while (!answer.equalsIgnoreCase("exit")) {
-			if (!c.getUdp().getFileListString().contains(answer) && !answer.contains(".")) {
+			if (!p.getFileListString().contains(answer) && !answer.contains(".")) {
 				c.printMessage(">> WARNING: invalid file request, please try again (or EXIT to cancel)\n...");
 				answer = c.getAnswer();
 			} else {
