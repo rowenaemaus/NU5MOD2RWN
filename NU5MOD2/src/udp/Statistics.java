@@ -24,7 +24,9 @@ public class Statistics {
 	}
 
 	public void printStats() {
-		printMessage(String.format("***** Statistics on the transmission of %s:", filename));
+		printMessage("\n*****");
+		printMessage("*****");
+		printMessage(String.format("Statistics on the transmission of %s:", filename));
 		printMessage(String.format("%-32s%10d %16s", "Total packets received:",pktsReceived, "packets"));
 		printMessage(String.format("%-32s%10d %16s", "Total packets sent:",pktsSent, "packets"));
 		printMessage(String.format("%-32s%10d %16s", "Total lost packets:",lostPackets, "packets"));
@@ -33,13 +35,14 @@ public class Statistics {
 		printMessage(String.format("%-32s%10d %16s", "Total file size:",totalFileSize, "bytes"));
 		printMessage(String.format("%-32s%10.3f %16s", "Average transfer speed:",getSpeed(), "bytes per ms"));
 		printMessage("*****");
+		printMessage("*****\n");
 	}
 
 	public double getSpeed() {		
 		return totalFileSize/getTotalTime();
 	}
-	
-	
+
+
 	public long getStartTransmission() {
 		return startTransmission;
 	}

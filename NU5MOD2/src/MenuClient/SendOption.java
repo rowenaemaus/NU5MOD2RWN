@@ -1,5 +1,8 @@
 package MenuClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import pckg.UDPClient;
 import udp.UDProtocol;
 import udp.UDProtocol.HeaderIdx;
@@ -8,39 +11,62 @@ import udp.UDProtocol.PktType;
 public class SendOption implements MenuOptionInterface{
 	private UDPClient c;
 	private UDProtocol p;
-	
+	private List<String> filesToSend = new ArrayList<String>();
+
 	@Override
 	public void handleAction(UDPClient c) {
 		this.c = c;
 		this.p = c.getUdp();
 		c.printMessage("-- Sending file to server --");
 
-		c.getUdp().updateContentList();
-		c.printMessage(">> Your file list is: " + c.getUdp().getAvailableFiles().toString());
+		p.updateContentList();
+		c.printMessage(">> Your file list is: " + p.getAvailableFiles().toString());
 
-		String fileToSend = askFilename();
-		
-		// send file pkt to let server know whatsup
-		sendFilePkt(fileToSend);
-		c.getUdp().sendFile(c.getUdp().setFile(fileToSend));
+		filesToSend.clear();
+		askFilesToSend();
+		if (filesToSend.isEmpty()) { 
+			c.printMessage(">> Nothing to send. Cancelling file request.");
+			return;
+		}
+
+		for (String filename : filesToSend) {
+			sendFilePkt(filename);
+			p.sendFile(p.setFile(filename));
+		}
 	}
 
-	private String askFilename() {
-		c.printMessage(">> What file would you like to send?\n...");
+	public void askFilesToSend() {
+		c.printMessage(">> What file(s) would you like to send? (Please enter with spaces in between)\n...");
 		String answer = c.getAnswer();
 
-		while (!answer.equalsIgnoreCase("exit")) {
-			if (!c.getUdp().getAvailableFiles().contains(answer)) {
-				c.printMessage(">> WARNING: invalid file request, please try again (or EXIT to cancel)\n...");
-				answer = c.getAnswer();
+		String[] answers = answer.split(" ");
+
+		for (String s : answers) {
+			if (!p.getAvailableFiles().contains(s)) {
+				c.printMessage(String.format(">> WARNING: invalid file '%s', not sending...", s));
 			} else {
-				c.printMessage(String.format(">> Sending file '%s' to server...", answer));
-				break;
+				c.printMessage(String.format(">> Adding %s to send-list to server...", s));
+				filesToSend.add(s);	
 			}
 		}
-		return answer;
-	}	
-	
+
+		c.printMessage(String.format(">> You are about to send: %s. Do you want to proceed (yes/no)?", filesToSend.toString()));
+		answer = c.getAnswer();
+
+		while (!(answer.equalsIgnoreCase("yes") || answer.equalsIgnoreCase("no"))) {
+			c.printMessage(">> WARNING: Invalid response, please try again\n...");
+			answer = c.getAnswer();
+		}
+
+		switch (answer) {
+		case "yes":
+			return;
+		case "no:":
+			filesToSend.clear();
+			return;
+		}
+	}
+
 	private void sendFilePkt(String filename) {
 		byte[] pkt = new byte[UDProtocol.HEADERSIZE + filename.getBytes().length];
 		pkt[HeaderIdx.TYPE.value] = (byte) PktType.FILE.value;

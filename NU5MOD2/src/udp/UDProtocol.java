@@ -284,16 +284,12 @@ public class UDProtocol {
 				pktNum = -1;
 				pktsSent.clear();
 			}
-
-			// check if all acks are in for these pkts
-			// if so continue
-			// else wait ff 2 x ofzo 
-			// als dan nog niet gooi transmissie Exception en stop overdracht
 		}
 		stats.setEndTransmission(System.currentTimeMillis());
 		stats.printStats();
 
-		sendHashFile(fileContent);		
+		sendHashFile(fileContent);	
+		printMessage(String.format("|| %s sent hash of file: '%s'", name, file.getName()));
 	}
 
 	public byte[] receiveFile(String filename) {
@@ -331,8 +327,6 @@ public class UDProtocol {
 				stats.setEndTransmission(System.currentTimeMillis());
 				printMessage("|| This was the last packet!");
 				printMessage("|| All packets in: " + allPktsIn(0, pktNum));
-				// TODO check if all are in from lastacked to final
-				// what to do when not all are in but you have the final one? wait a bit?
 			}
 			if (pktNum == MAXPKTNUM) {
 				pktsReceived.clear();
@@ -568,7 +562,6 @@ public class UDProtocol {
 			printMessage(String.format("|| ERROR: could not send multicast packet to %s", MULTICAST));
 		}
 	}
-
 
 	public void multicastReceive() {
 		try {
