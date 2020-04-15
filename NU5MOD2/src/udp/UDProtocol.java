@@ -1,8 +1,10 @@
 package udp;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -15,6 +17,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32;
@@ -53,6 +56,7 @@ public class UDProtocol {
 	private File[] fileList;
 	private Set<String> availableFiles = new HashSet<String>();
 	private String fileListString;
+	private BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
 
 	private Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 
@@ -76,7 +80,7 @@ public class UDProtocol {
 		DECLINE (5, "decline", new HandleDecline()),
 		DELETE (6, "delete", new HandleDelete()),
 		FILE (7, "file", new HandleFile()),
-		UNKNOWN (-1, "unknown", null);
+		UNKNOWN (-1, "unknown", new HandleUnknown());
 
 		public final int value;
 		public final String label;
@@ -313,7 +317,7 @@ public class UDProtocol {
 			endOfFile = (int) pktData[HeaderIdx.FINAL.value] == PktFinal.MID.value ? false : true;
 			byte[] data = Arrays.copyOfRange(pktData, HEADERSIZE, pktData.length);
 
-			if (!pktsReceived.contains(pktNum)) { // als deze nog niet eerder gezien is, niet wegschrijven
+			if (!pktsReceived.contains(pktNum)) {
 				int oldLen = fileContent.length;
 				int dataLen = data.length;
 				fileContent = Arrays.copyOf(fileContent,oldLen+dataLen);
@@ -331,6 +335,15 @@ public class UDProtocol {
 			if (pktNum == MAXPKTNUM) {
 				pktsReceived.clear();
 			}
+
+			if (Math.floorMod(pktNum, 5) == 0) {
+				System.out.println("****************");
+				System.out.println("checking pause");
+				System.out.println("****************");
+				System.out.println("****************");
+				checkPause();
+			}
+
 			printMessage("||----------------");
 		}
 		printMessage("|| Final received file size is:" + fileContent.length);
@@ -349,6 +362,26 @@ public class UDProtocol {
 			printMessage(String.format("|| WARNING: Integrity of file '%s' does not check. %s not writing file to system.", filename, name));
 		}
 		return fileContent;
+	}
+
+	public void checkPause() {
+		String pause = "p";
+		String input = "";
+
+		try {
+			if (keyboard.ready()) {
+				input = keyboard.readLine(); 
+				if (input.equalsIgnoreCase(pause)) {
+					input = keyboard.readLine();
+				}
+			} else {
+				return;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return;
 	}
 
 	public void writeByte(byte[] fileInBytes, String filename) {		
@@ -430,7 +463,7 @@ public class UDProtocol {
 		byte[] hash = getHash(data);
 		byte[] pkt = new byte[HEADERSIZE + hash.length];
 
-		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.ACK.value).byteValue();
+		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.DATA.value).byteValue();
 		pkt[HeaderIdx.PKTNUM.value] = (byte) hash.length;
 		System.arraycopy(hash, 0, pkt, HEADERSIZE, hash.length);
 
