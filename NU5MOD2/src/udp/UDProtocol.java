@@ -460,11 +460,12 @@ public class UDProtocol {
 			if (keyboard.ready()) {
 				input = keyboard.readLine(); 
 				if (input.equalsIgnoreCase(pause)) {
-					System.out.println("................");
-					System.out.println("................");
-					System.out.println("PAUSING DOWNLOAD");
-					System.out.println("................");
-					System.out.println("................");
+					printMessage("................");
+					printMessage("................");
+					printMessage("PAUSING DOWNLOAD");
+					printMessage("Hit any key + enter to resume");
+					printMessage("................");
+					printMessage("................");
 					input = keyboard.readLine();
 				}
 			} else {
