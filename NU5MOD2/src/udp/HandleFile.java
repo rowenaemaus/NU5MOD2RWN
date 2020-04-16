@@ -8,13 +8,17 @@ public class HandleFile implements PacketHandler{
 		this.p = p;
 		p.printPacketInfo(data);	
 		
-		//TODO als teveel files al, dan weiger (decline pkt)
-		
-		int size = p.getPktNum(data);
-		byte[] fileRequest = new byte[size];
-		System.arraycopy(data, UDProtocol.HEADERSIZE, fileRequest, 0, size);
+		if (p.getAvailableFiles().size() < p.getMaxFiles()) {
+			int size = p.getPktNum(data);
+			byte[] fileRequest = new byte[size];
+			System.arraycopy(data, UDProtocol.HEADERSIZE, fileRequest, 0, size);
 
-		String filename = new String(fileRequest);
-		p.receiveFile(filename);
+			String filename = new String(fileRequest);
+			p.sendAck(0);
+			p.receiveFile(filename);
+		} else {
+			p.sendDecline();
+			p.printMessage("|| WARNING: max file number reached. Not saving file...");
+		}
 	}
 }

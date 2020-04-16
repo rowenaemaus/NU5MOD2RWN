@@ -57,6 +57,7 @@ public class UDProtocol {
 	private Set<String> availableFiles = new HashSet<String>();
 	private String fileListString;
 	private BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
+	private static final int MAXFILES = 15;
 
 	private Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 
@@ -91,7 +92,7 @@ public class UDProtocol {
 			this.handler = handler;
 		}
 
-		static PktType getType(int i) {
+		public static PktType getType(int i) {
 			if (i == PktType.DATA.value) {
 				return PktType.DATA;
 			} else if (i == PktType.ACK.value) {
@@ -112,7 +113,7 @@ public class UDProtocol {
 			return PktType.UNKNOWN;
 		}
 
-		PacketHandler getHandler() {
+		public PacketHandler getHandler() {
 			return handler;
 		}
 	}
@@ -375,11 +376,6 @@ public class UDProtocol {
 					input = keyboard.readLine();
 				}
 			} else {
-				System.out.println("................");
-				System.out.println("................");
-				System.out.println("RESUMING DOWNLOAD");
-				System.out.println("................");
-				System.out.println("................");
 				return;
 			}
 		} catch (Exception e) {
@@ -467,7 +463,7 @@ public class UDProtocol {
 		byte[] hash = getHash(data);
 		byte[] pkt = new byte[HEADERSIZE + hash.length];
 
-		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.DATA.value).byteValue();
+		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.ACK.value).byteValue();
 		pkt[HeaderIdx.PKTNUM.value] = (byte) hash.length;
 		System.arraycopy(hash, 0, pkt, HEADERSIZE, hash.length);
 
@@ -778,6 +774,10 @@ public class UDProtocol {
 	public void setFileListString(String string) {
 		this.fileListString = string;  
 
+	}
+	
+	public int getMaxFiles() {
+		return UDProtocol.MAXFILES;
 	}
 
 	public long getCRC(byte[] data) {

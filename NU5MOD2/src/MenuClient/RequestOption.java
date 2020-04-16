@@ -2,8 +2,6 @@ package MenuClient;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 import pckg.UDPClient;
 import udp.UDProtocol;
