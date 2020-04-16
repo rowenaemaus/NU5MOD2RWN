@@ -37,6 +37,7 @@ public class UDProtocol {
 	private InetAddress otherIP = null;
 	private int otherPort = -1;
 
+	// Variables for the multicast functionality
 	private static final String MULTICAST = "230.0.0.0";
 	private InetAddress multicastAddr;
 	private int multicastPort = 5555;
@@ -44,14 +45,17 @@ public class UDProtocol {
 	private String mcMsg1 = "hiserver";
 	private String mcMsg2 = "hiclient";
 
+	// Packet related constants
 	public static final int HEADERSIZE = HeaderIdx.values().length; 
 	public static final int DATASIZE = 256;
 	public static final int MAXPKTNUM = 127;
 
+	// Sets to keep track of sent and received packets
 	Set<Integer> pktsSent = new HashSet<>();
 	Set<Integer> pktsReceived = new HashSet<>();
 	Set<Integer> acksReceived = new HashSet<>();
 
+	// Variables related to files on server
 	private File fileLocation;
 	private File[] fileList;
 	private Set<String> availableFiles = new HashSet<String>();
@@ -61,6 +65,11 @@ public class UDProtocol {
 
 	private Set<String> allowedExtension = new HashSet<String>(Arrays.asList("txt", "png", "pdf"));
 
+	/** 
+	 * HeadIdx - the index of the header where certain types of information 
+	 * are stored. 
+	 * 
+	 */
 	public enum HeaderIdx {
 		TYPE (0),
 		PKTNUM (1),
@@ -72,6 +81,13 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * PktType - Different types of packets that can be sent
+	 * and received by either server or client. Each type of 
+	 * packet has a designated PacketHandler to further process 
+	 * the packet.
+	 *
+	 */
 	public enum PktType {
 		DATA (0, "data", new HandleData()), 
 		ACK (1, "ack", new HandleAck()), 
@@ -118,6 +134,12 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * PktFinal - Indicates whether a data packet is the last 
+	 * packet of to be received data or not. This way the final 
+	 * packet - ack combination will not be lost.
+	 *
+	 */
 	public enum PktFinal {
 		MID (0), FINAL (1);
 		public final int value;
@@ -126,6 +148,12 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Constructor of UDP instance
+	 * @param name name of the user of this protocol
+	 * @param port preferred port to open datagramsocket on
+	 * @param fileLocation location where files are stored (for upload and download)
+	 */
 	public UDProtocol(String name, int port, File fileLocation) {
 		try {
 			this.name = name;
@@ -143,6 +171,14 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * A class to keep track of the timeout since
+	 * a packet was sent. An instance of this object is 
+	 * created when a PktType.DATA packet is sent. As soon
+	 * as the timer runs out, it checks whether the ack came 
+	 * in, and if not resends the data (creating new timeout
+	 * instance, this one dies)
+	 */
 	public class TimeOut implements Runnable{
 		public static final int TIMELIMIT = 3;
 		private DatagramPacket pkt;
@@ -169,6 +205,10 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Requests a list of the available files to the receiver of
+	 * this request.
+	 */
 	public void sendContentRequest() {
 		printMessage(String.format("|| %s requests the file contents of <%s,%d>", name, otherIP.getCanonicalHostName(), otherPort));
 		byte[] data = new byte[HEADERSIZE];
@@ -178,11 +218,22 @@ public class UDProtocol {
 		receivePacket();
 	}
 
+	/**
+	 * Listens for a contentRequest of all available files. The
+	 * handling of the request is done in a PacketHandler 
+	 * implementation
+	 */
 	public void getContentRequest() {
 		receivePacket();
 		printMessage(String.format("|| %s received request for content", name));
 	}
 
+	/**
+	 * Sends a request for file transfer to the receiver of this
+	 * request. After sending the request for files, first a packet
+	 * receives, confirming or declining the transfer of the file.
+	 * @param filename name of the requested file
+	 */
 	public void gimmeFile(String filename) {
 		byte[] pkt = new byte[HEADERSIZE + filename.getBytes().length];
 		pkt[HeaderIdx.TYPE.value] = (byte) PktType.GIMME.value;
@@ -204,6 +255,13 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Sends a request to delete a file. The sender of this request 
+	 * receives a confirmation/decline before the deletion. And after 
+	 * the deletion of the file receives a confirmation/decline of
+	 * actual success of the file removal.
+	 * @param filename name of the file to be deleted
+	 */
 	public void deleteFile(String filename) {
 		byte[] pkt = new byte[HEADERSIZE + filename.getBytes().length];
 		pkt[HeaderIdx.TYPE.value] = (byte) PktType.DELETE.value;
@@ -232,6 +290,12 @@ public class UDProtocol {
 		}		
 	}
 
+	/**
+	 * Method to remove a file. File is removed from fileList and
+	 * availableFiles to remove all references.
+	 * @param f file to be deleted
+	 * @return whether file was successfully deleted
+	 */
 	public boolean deleteFromServer(File f) {
 		if(f.delete()) {
 			printMessage(String.format("|| SUCCESS: %s deleted %s", name, f.getName()));
@@ -244,6 +308,16 @@ public class UDProtocol {
 		} 
 	}
 
+	/**
+	 * Sends a file through datagrampackets. The file is read to byte
+	 * array, and then cut up in datagrampackets of size DATASIZE.
+	 * The header carries the packet number of the data packet. After 
+	 * 128 packets, the packetnumber is reset to 0 (pktNum is 1 byte).
+	 * After sending all the data, statistics of the transmission are
+	 * printed, and the hash of the original datafile is sent.
+	 * The timeout is set in sendPacket().
+	 * @param file
+	 */
 	public void sendFile(File file) {
 		Statistics stats = new Statistics(file.getName());
 		printMessage("||----------------");
@@ -297,6 +371,19 @@ public class UDProtocol {
 		printMessage(String.format("|| %s sent hash of file: '%s'", name, file.getName()));
 	}
 
+	/**
+	 * Receives a file packet in datagrampackets. The packets are acked
+	 * by pktNum of the header. The listening for data packets stops as
+	 * soon as the header carries the PktFinal.FINAL value.
+	 * Every 5 packets, it is checked whether during transmission there
+	 * was a p typed in the console. If this is the case, the download
+	 * is paused. 
+	 * After the final packet is in, statistics on the transmission 
+	 * are displayed and the hash is received. When the hash matches 
+	 * the received data, the file is stored. Otherwise it is discarded.
+	 * @param filename name of the file to be saved
+	 * @return contents of the file that is received
+	 */
 	public byte[] receiveFile(String filename) {
 		Statistics stats = new Statistics(filename);
 		printMessage("||----------------");
@@ -360,6 +447,11 @@ public class UDProtocol {
 		return fileContent;
 	}
 
+	/**
+	 * Checks whether 'p' + enter is in the BufferedReader
+	 * keyboard. If so, it wil pause the transmission until
+	 * another key + enter is hit.
+	 */
 	public void checkPause() {
 		String pause = "p";
 		String input = "";
@@ -384,6 +476,12 @@ public class UDProtocol {
 		return;
 	}
 
+	/**
+	 * Writes the received byte[] to a file on the system using
+	 * OutputStream. 
+	 * @param fileInBytes the byte[] of the received data
+	 * @param filename name of the file to be saved
+	 */
 	public void writeByte(byte[] fileInBytes, String filename) {		
 		try { 
 			File file = setFile(checkFilename(filename));
@@ -399,6 +497,12 @@ public class UDProtocol {
 		} 
 	}
 
+	/**
+	 * Sends a datagrampacket containing header and data provided in 
+	 * the argument as body. After building the packet sends it over
+	 * the datagramsocket.
+	 * @param data
+	 */
 	public void sendPacket(byte[] data) {
 		try {
 			DatagramPacket send = new DatagramPacket(data, data.length, otherIP, otherPort);
@@ -415,6 +519,12 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Receives data from the datagramsocket. After reception, the 
+	 * packet type is extracted and further handling is done by specified 
+	 * PacketHandlers defined in the PktType enum. 
+	 * @return data that is received (including header)
+	 */
 	public byte[] receivePacket() {
 		try {
 			byte[] buffer = new byte[HEADERSIZE + DATASIZE];
@@ -434,6 +544,11 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Sends an ack type packet. Given the packetnumber constructs a packet
+	 * of type PktType.ACK and sets the pktnum in the header. 
+	 * @param pktNum
+	 */
 	public void sendAck(int pktNum) {
 		byte[] pkt = new byte[HEADERSIZE];
 		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.ACK.value).byteValue();
@@ -442,16 +557,31 @@ public class UDProtocol {
 		sendPacket(pkt);
 	}
 
+	/**
+	 * Receives acks. Gets the data from the receivePacket() and adds the
+	 * received number to acksReceived. This method does nothing special 
+	 * on top of HandleAck. 
+	 * >>>> Nominated for deletion. 
+	 */
 	public void receiveAck() {
 		byte[] receivedAck = receivePacket();
 		acksReceived.add((int) getPktNum(receivedAck)); 
 	}
 
+	/**
+	 * Receives acks. Listens for an ack of a specific pktNum
+	 * @param pktNum the pktNum to check for acks
+	 * @return whether this pktNum has arrived. 
+	 * >>>> Nominated for deletion
+	 */
 	public boolean receiveAck(int pktNum) {
 		byte[] receivedAck = receivePacket();
 		return getPktNum(receivedAck) == pktNum && receivedAck[HeaderIdx.TYPE.value] == PktType.ACK.value;
 	}
 
+	/**
+	 * Sends decline type datagrampackets
+	 */
 	public void sendDecline() {
 		byte[] pkt = new byte[HEADERSIZE];
 		pkt[HeaderIdx.TYPE.value] = ((Integer) PktType.DECLINE.value).byteValue();
@@ -459,6 +589,10 @@ public class UDProtocol {
 		sendPacket(pkt);
 	}
 
+	/**
+	 * Sends datagrampacket with hash of provided byte[] argument
+	 * @param data data to be converted to hash
+	 */
 	public void sendHashFile(byte[] data) {
 		byte[] hash = getHash(data);
 		byte[] pkt = new byte[HEADERSIZE + hash.length];
@@ -470,6 +604,10 @@ public class UDProtocol {
 		sendPacket(pkt);
 	}
 
+	/**
+	 * Receives datagrampacket with hash of original data
+	 * @return hash code of original data, extracted from packet
+	 */
 	public byte[] receiveHash() {
 		byte[] pkt = receivePacket();
 		int size = getPktNum(pkt);
@@ -478,6 +616,11 @@ public class UDProtocol {
 		return hash;
 	}
 
+	/**
+	 * Computes the hash of provided byte[] argument.
+	 * @param data to be converted data
+	 * @return hash byte[] of data
+	 */
 	public byte[] getHash(byte[] data) {
 		MessageDigest md = null;
 		try {
@@ -489,6 +632,13 @@ public class UDProtocol {
 		return md.digest();
 	}
 
+	/**
+	 * Checks if all packets from index start to index end
+	 * are in.
+	 * @param start index from where to check
+	 * @param end index to where to check
+	 * @return Whether all packet nums between start and end are in
+	 */
 	public boolean allPktsIn(int start, int end) {
 		for (int i = start; i <= end; i++) {
 			if (!pktsReceived.contains(i)) {
@@ -497,6 +647,9 @@ public class UDProtocol {
 		} return true;
 	}
 
+	/*
+	 * Forms 1 long String of all the Strings in AvailableFiles 
+	 */
 	public String getContentlistString() {
 		updateContentList();
 		String contents = "";
@@ -506,6 +659,10 @@ public class UDProtocol {
 		return contents;
 	}
 
+	/**
+	 * Updates the current list of available files. Only
+	 * list those that are of the permitted type.
+	 */
 	public void updateContentList() {
 		fileList = getFileLocation().listFiles();
 		for (File f : getFileList()) {
@@ -520,6 +677,13 @@ public class UDProtocol {
 	 * ********************************************
 	 * *********** Connection methods *************
 	 * ******************************************** 
+	 */
+	
+	/**
+	 * Extracts all network interfaces of current device.
+	 * Scans for ip-addresses and selects the one starting
+	 * with 'compare' to select local network ip.
+	 * @return local IP starting with 'compare'
 	 */
 	public InetAddress getNetworkIP() {
 		String compare = "192.168.";
@@ -550,6 +714,10 @@ public class UDProtocol {
 		return localIP;
 	}
 
+	/**
+	 * Sets up a datagramSocket
+	 * @return whether socket was set up successfully
+	 */
 	public boolean createSocket() {
 		int maxAttempts = 2;
 		int attempts = 1;
@@ -567,6 +735,11 @@ public class UDProtocol {
 		return (socket != null);
 	}
 
+	/**
+	 * Sends a pre-defined multicast message over the datagramsocket.
+	 * Then listens for a predefined response String. If this 
+	 * String is received, the IP and port of the sender are stored.
+	 */
 	public void multicastSend() {
 		try {
 			byte[] msg = mcMsg1.getBytes();
@@ -596,6 +769,13 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Sets up a multicast socket and joins a predefined group address.
+	 * Then listens for a message to come in on this socket. If this 
+	 * message is the predefined connect message, a predefined response 
+	 * is sent back to sender. The IP and port of this sender is saved.
+	 * Afterwards, the multicast group is left and socket closed.  
+	 */
 	public void multicastReceive() {
 		try {
 			MulticastSocket sock = new MulticastSocket(multicastPort);
@@ -640,6 +820,12 @@ public class UDProtocol {
 		}
 	}
 
+	/**
+	 * Creates a File object provided filename and globally defined
+	 * path/location
+	 * @param filename
+	 * @return
+	 */
 	public File setFile(String filename) {
 		return new File(getFileLocation().toString()+"/"+filename);
 	}
@@ -653,6 +839,10 @@ public class UDProtocol {
 		printMessage(String.format("|| Packet info: ip %s, port %d", p.getAddress().toString(), p.getPort()));
 	}
 
+	/**
+	 * Prints info of a packet
+	 * @param data
+	 */
 	public void printPacketInfo(byte[] data) {
 		printMessage(String.format("|| %s received packet type: %s, pktNum: %d, size: %d", name, PktType.getType((data[HeaderIdx.TYPE.value])).label, data[HeaderIdx.PKTNUM.value], data.length));
 	}
@@ -735,6 +925,12 @@ public class UDProtocol {
 		return i == -1 || i == 0 ? "" : s.substring(i+1);
 	}
 
+	/**
+	 * Checks if a file with a certain filename is already
+	 * in this folder, otherwise adds '_new' to it.
+	 * @param s
+	 * @return
+	 */
 	public String checkFilename(String s) {
 		updateContentList();
 		if (availableFiles.contains(s)) {
@@ -743,6 +939,11 @@ public class UDProtocol {
 		return s;
 	}
 
+	/**
+	 * Adds '_new' to the provided s.
+	 * @param s
+	 * @return
+	 */
 	public String fileNewVersion(String s) {
 		String ext = getExtension(s);
 		int i = s.indexOf(".");
