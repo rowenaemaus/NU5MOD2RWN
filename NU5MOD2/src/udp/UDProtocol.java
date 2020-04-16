@@ -337,13 +337,8 @@ public class UDProtocol {
 			}
 
 			if (Math.floorMod(pktNum, 5) == 0) {
-				System.out.println("****************");
-				System.out.println("checking pause");
-				System.out.println("****************");
-				System.out.println("****************");
 				checkPause();
 			}
-
 			printMessage("||----------------");
 		}
 		printMessage("|| Final received file size is:" + fileContent.length);
@@ -372,15 +367,24 @@ public class UDProtocol {
 			if (keyboard.ready()) {
 				input = keyboard.readLine(); 
 				if (input.equalsIgnoreCase(pause)) {
+					System.out.println("................");
+					System.out.println("................");
+					System.out.println("PAUSING DOWNLOAD");
+					System.out.println("................");
+					System.out.println("................");
 					input = keyboard.readLine();
 				}
 			} else {
+				System.out.println("................");
+				System.out.println("................");
+				System.out.println("RESUMING DOWNLOAD");
+				System.out.println("................");
+				System.out.println("................");
 				return;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		return;
 	}
 

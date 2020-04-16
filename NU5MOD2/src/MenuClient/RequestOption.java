@@ -13,8 +13,6 @@ public class RequestOption implements MenuOptionInterface{
 	private UDPClient c;
 	private UDProtocol p;
 	private List<String> fileRequest = new ArrayList<String>();
-	private Thread download;
-	private Thread pause;
 
 	@Override
 	public void handleAction(UDPClient c) {
@@ -33,13 +31,6 @@ public class RequestOption implements MenuOptionInterface{
 		for (String s : fileRequest) {
 			p.gimmeFile(s);
 		}
-		
-		
-//		download = new Thread(new Download());
-//		pause = new Thread(new Pause());
-//
-//		download.start();
-//		pause.start();
 	}
 
 	public void askFilesToGet() {
@@ -57,7 +48,8 @@ public class RequestOption implements MenuOptionInterface{
 			}
 		}
 
-		c.printMessage(String.format(">> You are about to request: %s. Do you want to proceed (yes/no)?", fileRequest.toString()));
+		c.printMessage(String.format(">> You are about to request: %s. Do you want to proceed (yes/no)?\n"
+				+ ">> PLEASE NOTE: During transfer, type <'p' + enter> to pause, and <any key + enter> to resume...", fileRequest.toString()));
 		answer = c.getAnswer();
 
 		while (!(answer.equalsIgnoreCase("yes") || answer.equalsIgnoreCase("no"))) {
@@ -73,97 +65,5 @@ public class RequestOption implements MenuOptionInterface{
 			return;
 		}
 	}	
-
-	public class Download implements Runnable{
-
-		public Download() {
-		}
-
-		@Override
-		public void run() {
-			
-		}
-	}
-
-	public class Pause implements Runnable{
-
-		public Scanner keyboard = new Scanner(System.in);
-		public String pause = "p";
-		public String typed = "";
-
-		@SuppressWarnings("static-access")
-		@Override
-		public void run() {
-			while (download.isAlive()) {
-				try {
-					Thread.sleep(TimeUnit.SECONDS.toMillis(100));
-					download.sleep(TimeUnit.SECONDS.toMillis(10000));
-					System.out.println("................");
-					System.out.println("................");
-					System.out.println("GET INPUT");
-					System.out.println("................");
-					System.out.println("................");
-					typed = keyboard.next();
-					if (pause.equalsIgnoreCase(pause)) {
-						System.out.println("................");
-						System.out.println("................");
-						System.out.println("PAUSING DOWNLOAD");
-						System.out.println("................");
-						System.out.println("................");
-						download.wait();
-					} else {
-						System.out.println("................");
-						System.out.println("................");
-						System.out.println("RESUMING DOWNLOAD");
-						System.out.println("................");
-						System.out.println("................");
-						download.notify();
-					}
-				} catch (Exception e) { 
-					// e
-				}
-			}
-		}
-
-		//		@Override
-		//		public void keyTyped(KeyEvent e) {
-		//			int key = e.getKeyCode();
-		//
-		//			if (key == KeyEvent.VK_SPACE) {
-		//				try {
-		//					download.wait();
-		//				} catch (InterruptedException e1) {
-		//					c.printMessage(">> ERROR: something went wrong with pausing the download");
-		//					e1.printStackTrace();
-		//				}	
-		//			} else {
-		//				download.notify();	
-		//			}
-		//		}
-		//
-		//		@Override
-		//		public void keyPressed(KeyEvent e) {
-		//			int key = e.getKeyCode();
-		//
-		//			if (key == KeyEvent.VK_SPACE) {
-		//				try {
-		//					download.wait();
-		//				} catch (InterruptedException e1) {
-		//					c.printMessage(">> ERROR: something went wrong with pausing the download");
-		//					e1.printStackTrace();
-		//				}	
-		//			} else {
-		//				download.notify();	
-		//			}
-		//
-		//		}
-		//
-		//		@Override
-		//		public void keyReleased(KeyEvent e) {
-		//			// TODO Auto-generated method stub
-		//
-		//		}
-	}
-
 }
 
