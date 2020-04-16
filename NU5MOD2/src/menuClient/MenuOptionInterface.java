@@ -1,4 +1,4 @@
-package MenuClient;
+package menuClient;
 
 import pckg.UDPClient;
 

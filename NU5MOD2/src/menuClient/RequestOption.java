@@ -1,4 +1,4 @@
-package MenuClient;
+package menuClient;
 
 import java.util.ArrayList;
 import java.util.List;

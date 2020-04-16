@@ -3,7 +3,7 @@ package pckg;
 import java.io.File;
 import java.util.Scanner;
 
-import MenuClient.MenuOptionInterface;
+import menuClient.MenuOptionInterface;
 import udp.UDProtocol;
 
 public class UDPClient implements Runnable{
@@ -13,11 +13,11 @@ public class UDPClient implements Runnable{
 	private static String fileLocString = System.getProperty("user.home")+"/Downloads/udp";
 	
 	public enum Menu {
-		CONTENT ("a", "Show content of server", new MenuClient.ContentOption()),
-		REQUEST ("b", "Request file from server", new MenuClient.RequestOption()),
-		SEND ("c", "Send a file to server", new MenuClient.SendOption()),
-		DELETE ("d", "Delete file from server", new MenuClient.DeleteOption()),
-		QUIT ("e", "Shutdown this client", new MenuClient.ShutdownOption());
+		CONTENT ("a", "Show content of server", new menuClient.ContentOption()),
+		REQUEST ("b", "Request file from server", new menuClient.RequestOption()),
+		SEND ("c", "Send a file to server", new menuClient.SendOption()),
+		DELETE ("d", "Delete file from server", new menuClient.DeleteOption()),
+		QUIT ("e", "Shutdown this client", new menuClient.ShutdownOption());
 
 		public String option;
 		public String menuText;
