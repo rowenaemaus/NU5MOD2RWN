@@ -46,7 +46,11 @@ different types of packets can be transferred using the protocol. In the UDProto
 in an enum. Each level of this enum has a specific subclass implementation of the PacketHandler interface attached. These classes
 each handle the packet differently. These PacketHandlers are also in this package.
 
-==================
+==================  
+*NOTE* : Server should be running before starting client!
+
+__To start server and client from IDE__  
+run 'UDPServer' first, then run 'UDPClient'  
 
 __To start the server on the Raspberry Pi__  
 run 'java -jar UDPRowenaSrv.jar [args]' (optional filelocation arg)  
