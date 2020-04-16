@@ -34,13 +34,15 @@ public class UDPClient implements Runnable{
 		}
 	}
 
-	@Override
-	public void run() {
+	public UDPClient(String name, int port) {
 		File fileLocation = new File(fileLocString);
 
 		printMessage("|| Welcome client!\n|| -----------\n");
-		this.udp = new UDProtocol("client" , 8071, fileLocation);
-
+		this.udp = new UDProtocol(name , port, fileLocation);
+	}
+	
+	@Override
+	public void run() {
 		createSocket();
 		getUdp().multicastSend();
 		printMessage(">>>>>>>>>>>>>>>>>");
@@ -52,7 +54,8 @@ public class UDPClient implements Runnable{
 		Menu m = null;
 
 		while (m != Menu.QUIT) {
-			m = printMenu();
+			printMenu();
+			m = pickMenu();
 			m.handleOption.handleAction(this);
 		}
 		printMessage("<<<<<<<<<<<<<<<<<");
@@ -60,13 +63,16 @@ public class UDPClient implements Runnable{
 		keyboard.close();
 	}
 
-	public Menu printMenu() {
+	public void printMenu() {
 		printMessage("---------------------------");
 		printMessage(" MENU:");
 
 		for (Menu m : Menu.values()) {
 			printMessage(String.format("- %-10s: %s", m.option, m.menuText));
 		}	
+	}
+
+	public Menu pickMenu() {
 		printMessage("---------------------------");
 		printMessage(">> Please make your choice:");
 
@@ -80,7 +86,7 @@ public class UDPClient implements Runnable{
 		}	
 		return validAnswer;
 	}
-
+		
 	public Menu checkValidOption(String s) {
 		for (Menu m : Menu.values()) {
 			if (m.option.equalsIgnoreCase(s)) {
@@ -114,14 +120,14 @@ public class UDPClient implements Runnable{
 	}
 
 	public static void main (String[] args) {
-		UDPClient c = new UDPClient();
+		UDPClient c = new UDPClient("client", 8071);
 		if (args.length > 0) {
 			fileLocString = args[0];
 		}
 
 		new Thread(c).start();
 	}
-
+	
 	public UDProtocol getUdp() {
 		return udp;
 	}

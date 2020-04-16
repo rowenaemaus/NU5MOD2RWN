@@ -38,8 +38,8 @@ public class Statistics {
 		printMessage("*****\n");
 	}
 
-	public double getSpeed() {		
-		return totalFileSize/getTotalTime();
+	public double getSpeed() {	
+		return (getTotalTime() <= 0) ? 0 : totalFileSize/getTotalTime();
 	}
 
 

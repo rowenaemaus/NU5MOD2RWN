@@ -30,6 +30,5 @@ public class HandleDelete implements PacketHandler {
 			p.printMessage(String.format("|| %s declines. %s is not available in file list", p.name, filename));;
 			p.sendDecline();
 		}
-		
 	}
 }

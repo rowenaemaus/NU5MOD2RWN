@@ -31,7 +31,15 @@ public class SendOption implements MenuOptionInterface{
 
 		for (String filename : filesToSend) {
 			sendFilePkt(filename);
-			p.sendFile(p.setFile(filename));
+			byte[] response = p.receivePacket();
+			PktType responseType = p.getPktType(response);
+
+			if (responseType == PktType.ACK) {
+				c.printMessage(String.format(">> Sending file: '%s'", filename));
+				p.sendFile(p.setFile(filename));
+			} else {
+				c.printMessage(String.format("WARNING: Not sending %s. Max number of files on server reached", filename));
+			}
 		}
 	}
 

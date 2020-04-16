@@ -9,5 +9,4 @@ public class HandleData implements PacketHandler{
 		p.printMessage(String.format("|| %s sending ack for data packet num: %d", p.name, pktNum));
 		p.sendAck(pktNum);
 	}
-
 }

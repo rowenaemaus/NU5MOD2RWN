@@ -9,15 +9,10 @@ public class UDPServer implements Runnable{
 	UDProtocol udp;
 
 	boolean clientConnected = false;
-
-	int maxFiles = 10;
-	int numFiles;
 	 
 	private static String fileLocString = "/home/pi/udp2";
 	
 //	private static String fileLocString = System.getProperty("user.home")+"/Downloads/udp2";	
-
-	int maxFileSize = 100000;
 
 	@Override
 	public void run() {

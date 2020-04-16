@@ -6,7 +6,7 @@ public class ContentOption implements MenuOptionInterface {
 
 	@Override
 	public void handleAction(UDPClient c) {
-		System.out.println("-- Requesting contents of server --");
+		c.printMessage("-- Requesting contents of server --");
 		c.getUdp().sendContentRequest();
 	}
 }
