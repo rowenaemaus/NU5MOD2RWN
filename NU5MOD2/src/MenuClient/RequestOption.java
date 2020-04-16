@@ -46,8 +46,8 @@ public class RequestOption implements MenuOptionInterface{
 			}
 		}
 
-		c.printMessage(String.format(">> You are about to request: %s. Do you want to proceed (yes/no)?\n"
-				+ ">> PLEASE NOTE: During transfer, type <'p' + enter> to pause, and <any key + enter> to resume...", fileRequest.toString()));
+		c.printMessage(String.format(">> PLEASE NOTE: During transfer, type <'p' + enter> to pause, and <any key + enter> to resume\n"
+				+ "\">> You are about to request: %s. Do you want to proceed (yes/no)?\\n\"", fileRequest.toString()));
 		answer = c.getAnswer();
 
 		while (!(answer.equalsIgnoreCase("yes") || answer.equalsIgnoreCase("no"))) {
